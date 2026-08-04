@@ -8,6 +8,11 @@
 </head>
 <body class="min-h-full bg-gray-50 text-gray-800 antialiased">
 
+@php
+    $member = auth()->guard('member')->user();
+    $operator = auth()->guard('web')->user();
+@endphp
+
 <header class="border-b border-gray-200 bg-white">
     <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
         <a href="{{ route('beranda') }}" class="flex items-center gap-2">
@@ -16,18 +21,46 @@
         </a>
 
         <nav class="flex flex-wrap items-center gap-1 text-sm">
-            <a href="{{ route('admin.applications.index') }}"
-               class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.applications.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
-                Permohonan
-            </a>
-            <a href="{{ route('admin.logs.index') }}"
-               class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.logs.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
-                Log Integrasi
-            </a>
-            <a href="{{ route('admin.publish.create') }}"
-               class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.publish.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
-                Jalur B
-            </a>
+            @if ($operator)
+                <a href="{{ route('admin.applications.index') }}"
+                   class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.applications.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Permohonan
+                </a>
+                <a href="{{ route('admin.logs.index') }}"
+                   class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.logs.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Log Integrasi
+                </a>
+                <a href="{{ route('admin.publish.create') }}"
+                   class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.publish.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Jalur B
+                </a>
+
+                <span class="ml-2 border-l border-gray-200 pl-3 text-xs text-gray-500">
+                    Operator: <span class="font-medium text-gray-700">{{ $operator->name }}</span>
+                </span>
+                <form method="POST" action="{{ route('operator.keluar') }}" class="ml-1">
+                    @csrf
+                    <button type="submit" class="rounded-md px-3 py-1.5 text-gray-600 hover:bg-gray-100">Keluar</button>
+                </form>
+            @elseif ($member)
+                <span class="text-xs text-gray-500">
+                    Masuk sebagai <span class="font-medium text-gray-700">{{ $member->name }}</span>
+                    <span class="font-mono text-gray-400">({{ $member->user_login }})</span>
+                </span>
+                <form method="POST" action="{{ route('keluar') }}" class="ml-1">
+                    @csrf
+                    <button type="submit" class="rounded-md px-3 py-1.5 text-gray-600 hover:bg-gray-100">Keluar</button>
+                </form>
+            @else
+                <a href="{{ route('masuk') }}"
+                   class="rounded-md px-3 py-1.5 {{ request()->routeIs('masuk') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Masuk
+                </a>
+                <a href="{{ route('operator.masuk') }}"
+                   class="rounded-md px-3 py-1.5 text-gray-500 hover:bg-gray-100">
+                    Operator
+                </a>
+            @endif
         </nav>
     </div>
 </header>
@@ -62,7 +95,6 @@
 <footer class="mx-auto max-w-6xl px-4 pb-10 pt-4 text-xs leading-relaxed text-gray-400">
     Aplikasi contoh implementasi kontrak integrasi PLD v1.1 (tracking
     <span class="font-mono">{{ config('pld.contract_version') }}</span>).
-    Panel operator sengaja tanpa autentikasi — jangan dijalankan di jaringan publik apa adanya.
 </footer>
 
 </body>

@@ -7,6 +7,7 @@ namespace Database\Seeders;
 use App\Enums\TrackingCategory;
 use App\Models\Application;
 use App\Models\Member;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 
@@ -24,6 +25,14 @@ final class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        // Operator internal — pemegang akses panel /admin. Populasi yang sepenuhnya
+        // terpisah dari member layanan.
+        User::query()->create([
+            'name' => 'Operator PEL',
+            'email' => 'operator@pel.test',
+            'password' => 'rahasia123',
+        ]);
+
         $john = Member::query()->create([
             'user_login' => 'john_doe',
             'name' => 'John Doe',

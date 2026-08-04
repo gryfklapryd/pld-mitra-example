@@ -47,10 +47,68 @@ Buka `http://localhost:8090`. Panel operator ada di `/admin`.
 
 Data contoh yang ikut ter-seed:
 
+**Member layanan** — masuk di `/masuk`:
+
 | user_login | password | Isi |
 |---|---|---|
 | `john_doe` | `rahasia123` | satu proses `ACTION_REQUIRED` (tahap 3/5) + satu `COMPLETED` |
 | `siti_aminah` | `rahasia123` | satu proses `IN_PROGRESS` (tahap 2/5) |
+
+**Operator internal** — masuk di `/operator/masuk`:
+
+| email | password |
+|---|---|
+| `operator@pel.test` | `rahasia123` |
+
+> **Jangan pernah menjalankan `db:seed` di server sungguhan** — kata sandi di atas
+> tertulis di repositori ini. Di server, buat akun operator lewat perintah:
+>
+> ```bash
+> php artisan pel:operator
+> ```
+>
+> Tanpa argumen ia bertanya secara interaktif dan kata sandinya tidak tampil di
+> layar; melewatkannya sebagai `--password=` membuatnya tersimpan di riwayat shell
+> dan terlihat di daftar proses server. Minimal 12 karakter.
+
+---
+
+## Autentikasi — dua populasi yang sengaja terpisah
+
+| | Member layanan | Operator internal |
+|---|---|---|
+| Guard | `member` (model `Member`) | `web` (model `User`) |
+| Masuk | `/masuk`, atau otomatis lewat SSO PLD | `/operator/masuk` |
+| Kredensial | `user_login` + password | email + password |
+| Boleh | membaca **prosesnya sendiri** | seluruh `/admin`, membaca proses siapa pun |
+
+**Kenapa member perlu halaman login sendiri, padahal ada SSO?** Karena tanpanya
+`API User Validation URL` kehilangan maknanya. Endpoint itu ada justru karena
+member **punya kredensial di aplikasi ini** yang bisa ia ketikkan di portal PLD
+saat menautkan akun.
+
+Konsekuensinya satu hal yang patut ditiru tim mitra:
+`MemberLoginController` dan `UserValidationController` memanggil **pemeriksa
+kredensial yang sama** (`App\Actions\ValidateMemberCredentialsAction`).
+Implementasi paralel adalah bug klasik — kata sandi diganti lewat aplikasi,
+penautan di PLD tetap memakai jalur lama, dan tak seorang pun tahu mengapa.
+
+**Halaman `detailUrl` tidak publik.** `GET /permohonan/{externalRef}` dijaga
+`ApplicationPolicy`: pemilik proses, atau operator. Member lain menerima **404,
+bukan 403** — menjawab "ada tapi bukan milikmu" tetap membocorkan keberadaan
+nomor itu. Tamu diarahkan ke halaman masuk lalu dikembalikan ke halaman semula,
+supaya tombol "Buka di layanan" dari portal PLD tidak pernah berakhir sebagai
+layar galat.
+
+**Batas percobaan masuk**: 5 kali per (akun + IP) — dikunci per pasangan, bukan
+per akun saja, agar tak seorang pun bisa mengunci akun orang lain dari luar
+hanya dengan menebak asal-asalan.
+
+**Ketiga endpoint kontrak tidak tersentuh autentikasi web** — pemanggilnya mesin,
+gerbangnya `Api-Key`. Ada uji khusus yang menjaga ini
+(`OperatorAccessTest::endpoint_kontrak_pld_tidak_ikut_terkunci`): menutup jalur
+mesin tanpa sadar akan membuat PLD menandai sinkronisasi gagal untuk seluruh
+member sekaligus, tanpa galat yang terlihat di sisi ini.
 
 ---
 
@@ -230,8 +288,9 @@ Seluruh kontrak diikat ke implementasinya di `App\Providers\DomainServiceProvide
 php artisan test
 ```
 
-38 uji, mencakup ketiga endpoint kontrak, seluruh invarian di atas, penukaran
-token SSO (termasuk sifat sekali-pakai), dan pemetaan kode jawaban Jalur B.
+65 uji, mencakup ketiga endpoint kontrak, seluruh invarian di atas, penukaran
+token SSO (termasuk sifat sekali-pakai), pemetaan kode jawaban Jalur B, serta
+autentikasi dan otorisasi kedua populasi pengguna.
 
 Uji memakai basis data terpisah (`pld_mitra_example_test`, lihat `phpunit.xml`)
 karena `RefreshDatabase` memangkas seluruh tabel — mengarahkannya ke basis data
@@ -247,10 +306,22 @@ menjadi tempat penyimpanan password bersih milik pengguna sistem lain.
 
 ## Sebelum dipakai sungguhan
 
-Aplikasi ini contoh. Yang **wajib** diubah untuk pemakaian nyata:
+Sudah ada: autentikasi dua populasi, otorisasi kepemilikan pada `detailUrl`,
+batas percobaan masuk, dan batas laju 120/menit pada ketiga endpoint arah masuk.
 
-- **Panel `/admin` tanpa autentikasi sama sekali.** Ia bisa mengubah status
-  permohonan siapa pun. Taruh di balik middleware `auth` + otorisasi peran.
-- **HTTPS wajib.** `API User Validation URL` menerima password member.
-- Batas laju pada ketiga endpoint arah masuk.
+Yang **masih wajib** Anda kerjakan sebelum dipakai nyata:
+
+- **Ganti kata sandi seeder.** `operator@pel.test` / `rahasia123` ada di repositori
+  ini dan terbaca siapa pun. Jangan pernah menjalankan `db:seed` di produksi.
+- **HTTPS wajib, tanpa kecuali.** `API User Validation URL` menerima password
+  member dalam bentuk mentah — itu memang bentuk kontraknya. Di atas HTTP polos,
+  setiap penautan akun menyiarkan password ke jaringan.
+- **`TrustProxies` bila di belakang reverse proxy/CDN.** Tanpa itu `$request->ip()`
+  berisi IP proxy, sehingga seluruh batas percobaan masuk jatuh ke satu kunci yang
+  sama — satu penebak bisa mengunci semua orang, dan batasnya sendiri jadi
+  tak berguna.
+- **Peran operator.** Saat ini setiap operator berwenang penuh. Bila nanti ada
+  operator yang hanya boleh membaca, tambahkan peran di `ApplicationPolicy`.
 - Kebijakan retensi `integration_logs` — ia tumbuh setiap 30 menit selamanya.
+- Pertimbangkan 2FA untuk operator: panel itu bisa mengirim email berkop resmi
+  kepada member.

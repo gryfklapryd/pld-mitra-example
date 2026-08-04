@@ -60,16 +60,25 @@
                 </div>
             </div>
 
-            <p class="mt-5 text-xs text-gray-500">
+            <p class="mt-5 text-xs leading-relaxed text-gray-500">
                 Anda belum masuk. Member mendarat di sini lewat
                 <span class="font-mono">{{ route('sso.landing') }}?pld_auth=&lt;token&gt;</span>
-                setelah menekan layanan ini di portal PLD.
+                setelah menekan layanan ini di portal PLD — atau bisa
+                <a href="{{ route('masuk') }}" class="text-blue-700 hover:underline">masuk langsung</a>
+                dengan kredensial PEL, yaitu pasangan yang sama yang diverifikasi
+                <span class="font-mono">API User Validation URL</span>.
             </p>
 
-            <a href="{{ route('admin.applications.index') }}"
-               class="mt-4 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
-                Buka panel operator
-            </a>
+            <div class="mt-4 flex flex-wrap gap-2">
+                <a href="{{ route('masuk') }}"
+                   class="inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                    Masuk sebagai member
+                </a>
+                <a href="{{ route('operator.masuk') }}"
+                   class="inline-block rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Panel operator
+                </a>
+            </div>
         </div>
     @endif
 @endsection

@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Http\Controllers\Admin\ApplicationController;
 use App\Http\Controllers\Admin\IntegrationLogController;
 use App\Http\Controllers\Admin\PublishController;
+use App\Http\Controllers\Auth\MemberLoginController;
+use App\Http\Controllers\Auth\OperatorLoginController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PublicApplicationController;
 use App\Http\Controllers\SsoLandingController;
@@ -14,32 +16,66 @@ use Illuminate\Support\Facades\Route;
 |-------------------------------------------------------------------------------
 | Sisi member
 |-------------------------------------------------------------------------------
+|
+| Member punya DUA pintu masuk, dan keduanya memang harus ada:
+|   1. SSO dari portal PLD (tanpa mengetik apa pun)
+|   2. Login langsung dengan user_login + password
+|
+| Pintu kedua bukan pelengkap — tanpanya `API User Validation URL` kehilangan
+| maknanya, karena endpoint itu ada justru untuk memverifikasi kredensial yang
+| member ketikkan sendiri.
+|
 */
 
 Route::get('/', HomeController::class)->name('beranda');
 
+Route::middleware('guest:member')->group(function (): void {
+    Route::get('/masuk', [MemberLoginController::class, 'create'])->name('masuk');
+    Route::post('/masuk', [MemberLoginController::class, 'store']);
+});
+
+Route::post('/keluar', [MemberLoginController::class, 'destroy'])
+    ->middleware('auth:member')
+    ->name('keluar');
+
 // `Redirect URL` yang didaftarkan di PLD: {APP_URL}/sso?pld_auth=
+// Tidak dijaga middleware auth — justru tugasnya MEMBENTUK sesi.
 Route::get('/sso', SsoLandingController::class)->name('sso.landing');
 
-// `detailUrl` tiap item tracking menunjuk ke sini. Kontrak mewajibkannya URL
-// absolut yang dapat dibuka member — jadi ia harus benar-benar ada, bukan
-// placeholder. Tautan mati di portal PLD tidak menghasilkan galat yang bisa kita
-// lihat; hanya member yang menemukannya.
+// Tujuan `detailUrl` tiap item tracking. Otorisasinya di ApplicationPolicy:
+// pemilik proses, atau operator internal. Sebelumnya terbuka bagi siapa pun yang
+// menebak nomor permohonan.
 Route::get('/permohonan/{externalRef}', PublicApplicationController::class)
     ->name('permohonan.show');
 
 /*
 |-------------------------------------------------------------------------------
-| Panel operator
+| Operator internal
+|-------------------------------------------------------------------------------
+*/
+
+Route::middleware('guest:web')->group(function (): void {
+    Route::get('/operator/masuk', [OperatorLoginController::class, 'create'])->name('operator.masuk');
+    Route::post('/operator/masuk', [OperatorLoginController::class, 'store']);
+});
+
+Route::post('/operator/keluar', [OperatorLoginController::class, 'destroy'])
+    ->middleware('auth:web')
+    ->name('operator.keluar');
+
+/*
+|-------------------------------------------------------------------------------
+| Panel operator — SELURUHNYA di balik autentikasi
 |-------------------------------------------------------------------------------
 |
-| Tanpa autentikasi — ini aplikasi contoh yang dijalankan lokal. Di aplikasi
-| sungguhan, seluruh grup ini WAJIB berada di balik middleware `auth` dan
-| otorisasi peran; ia bisa mengubah status permohonan siapa pun.
+| Panel ini bisa mengubah kategori dan tahap permohonan siapa pun, dan tiap
+| perubahan menerbitkan notifikasi — sebagian lewat EMAIL — kepada member atas
+| nama layanan ini. Terbuka tanpa autentikasi, ia menjadi alat mengirim email
+| berkop resmi bagi siapa saja yang menemukan alamatnya.
 |
 */
 
-Route::prefix('admin')->name('admin.')->group(function (): void {
+Route::prefix('admin')->name('admin.')->middleware('auth:web')->group(function (): void {
     Route::get('/', [ApplicationController::class, 'index'])->name('applications.index');
 
     Route::get('/permohonan/baru', [ApplicationController::class, 'create'])->name('applications.create');

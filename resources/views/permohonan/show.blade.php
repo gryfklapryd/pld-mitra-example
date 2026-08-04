@@ -7,6 +7,12 @@
          "Buka di layanan" dari panel tracking di portal PLD. --}}
 
     <div class="mx-auto max-w-3xl">
+        @if ($viewedAsOperator ?? false)
+            <div class="mb-4 rounded-lg border-l-4 border-indigo-400 bg-indigo-50 p-3 text-xs text-indigo-900">
+                Anda membuka halaman ini sebagai <strong>operator</strong>, bukan sebagai pemilik permohonan.
+            </div>
+        @endif
+
         <div class="rounded-xl border border-gray-200 bg-white p-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0">

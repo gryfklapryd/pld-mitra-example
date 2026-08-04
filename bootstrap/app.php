@@ -16,7 +16,23 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Aplikasi ini punya DUA populasi pengguna dengan halaman masuk berbeda:
+        // member layanan (`member`) dan operator internal (`web`). Bawaan Laravel
+        // mengarahkan seluruh tamu ke route bernama `login`, yang tidak ada di sini
+        // — tanpa penyetelan ini, `auth:web` gagal dengan "Route [login] not
+        // defined" alih-alih menampilkan halaman masuk.
+        $middleware->redirectGuestsTo(
+            fn (Request $request): string => $request->is('admin', 'admin/*', 'operator/*')
+                ? route('operator.masuk')
+                : route('masuk'),
+        );
+
+        // Arah sebaliknya: pengguna yang sudah masuk lalu membuka halaman login.
+        $middleware->redirectUsersTo(
+            fn (Request $request): string => $request->is('operator/*')
+                ? route('admin.applications.index')
+                : route('beranda'),
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
