@@ -75,6 +75,7 @@ final class MemberLoginController extends Controller
 
         $request->session()->regenerate();
         auth()->guard('member')->login($member, (bool) $request->boolean('remember'));
+        $request->session()->put('login_via', 'form');
 
         return redirect()->intended(route('beranda'));
     }

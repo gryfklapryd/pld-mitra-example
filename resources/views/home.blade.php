@@ -4,12 +4,27 @@
 
 @section('content')
     @if ($member)
-        <div class="mb-5 rounded-xl border border-green-200 bg-green-50 p-5">
-            <p class="text-sm font-semibold text-green-900">Masuk lewat SSO PLD</p>
-            <p class="mt-0.5 text-sm text-green-800">
+        {{-- Cara masuk ditampilkan apa adanya, bukan diasumsikan.
+             Sebelumnya panel ini selalu menulis "Masuk lewat SSO PLD" untuk setiap
+             member yang login — termasuk yang masuk lewat form biasa. Saat menguji
+             integrasi, itu membuat login langsung tampak seperti bukti SSO sudah
+             bekerja, dan menyembunyikan justru hal yang sedang diuji. --}}
+        @php $viaSso = session('login_via') === 'sso'; @endphp
+
+        <div class="mb-5 rounded-xl border p-5 {{ $viaSso ? 'border-green-200 bg-green-50' : 'border-blue-200 bg-blue-50' }}">
+            <p class="text-sm font-semibold {{ $viaSso ? 'text-green-900' : 'text-blue-900' }}">
+                {{ $viaSso ? 'Masuk lewat SSO PLD' : 'Masuk langsung di aplikasi ini (bukan lewat PLD)' }}
+            </p>
+            <p class="mt-0.5 text-sm {{ $viaSso ? 'text-green-800' : 'text-blue-800' }}">
                 {{ $member->name }}
                 (<span class="font-mono text-xs">{{ $member->user_login }}</span>)
             </p>
+            @unless ($viaSso)
+                <p class="mt-2 text-xs leading-relaxed text-blue-700">
+                    Halaman ini <strong>tidak</strong> membuktikan SSO berfungsi. Untuk mengujinya,
+                    keluar dulu lalu tekan layanan ini dari portal PLD.
+                </p>
+            @endunless
         </div>
 
         <h1 class="mb-3 text-lg font-bold text-gray-800">Permohonan Anda</h1>

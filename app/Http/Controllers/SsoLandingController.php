@@ -53,6 +53,12 @@ final class SsoLandingController extends Controller
         auth()->guard('member')->login($member);
         $request->session()->regenerate();
 
+        // Penanda cara masuk. Dipakai beranda untuk menyatakan apa adanya bahwa sesi
+        // ini lahir dari SSO — bukan sekadar "ada member yang login". Bedanya penting
+        // saat menguji integrasi: tanpa penanda ini, login biasa terlihat identik
+        // dengan SSO yang berhasil.
+        $request->session()->put('login_via', 'sso');
+
         return redirect()
             ->route('beranda')
             ->with('status', 'Anda masuk sebagai '.$member->name.' lewat SSO PLD.');
