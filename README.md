@@ -61,15 +61,25 @@ Data contoh yang ikut ter-seed:
 | `operator@pel.test` | `rahasia123` |
 
 > **Jangan pernah menjalankan `db:seed` di server sungguhan** — kata sandi di atas
-> tertulis di repositori ini. Di server, buat akun operator lewat perintah:
->
-> ```bash
-> php artisan pel:operator
-> ```
->
-> Tanpa argumen ia bertanya secara interaktif dan kata sandinya tidak tampil di
-> layar; melewatkannya sebagai `--password=` membuatnya tersimpan di riwayat shell
-> dan terlihat di daftar proses server. Minimal 12 karakter.
+> tertulis di repositori ini.
+
+### Membuat akun di server
+
+`migrate` saja tidak menciptakan akun apa pun, jadi server yang baru di-deploy
+tidak punya operator maupun member. Keduanya dibuat lewat perintah:
+
+```bash
+php artisan pel:operator     # akun panel /admin
+php artisan pel:member       # akun member layanan
+```
+
+Tanpa argumen keduanya bertanya interaktif dan kata sandinya **tidak tampil di
+layar**. Melewatkannya sebagai `--password=` membuatnya tersimpan di riwayat
+shell dan terlihat di daftar proses server — hindari di mesin bersama.
+
+`user_login` yang Anda tetapkan lewat `pel:member` adalah nilai yang harus
+diketik member saat menautkan akun di portal PLD, dan nilai yang sama yang
+dikirim PLD pada `userLogins[]` saat menyinkronkan tracking.
 
 ---
 

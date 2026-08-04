@@ -40,6 +40,24 @@ final class UserValidationRequest extends FormRequest
         ];
     }
 
+    /**
+     * Pesan Bahasa Indonesia, sejalan dengan dua endpoint kontrak lainnya.
+     *
+     * Bukan sekadar kerapian: `message` inilah yang diteruskan PLD ke layar
+     * pengelola layanan saat penautan gagal, dan pesan bawaan Laravel
+     * ("The user login field is required.") menyebut nama field dalam bentuk yang
+     * tidak ada di dokumen kontrak mana pun.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'user_login.required' => 'user_login wajib diisi.',
+            'password.required' => 'password wajib diisi.',
+        ];
+    }
+
     protected function failedValidation(Validator $validator): void
     {
         throw new HttpResponseException(new JsonResponse(
