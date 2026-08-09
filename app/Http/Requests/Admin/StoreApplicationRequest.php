@@ -14,6 +14,31 @@ final class StoreApplicationRequest extends FormRequest
     }
 
     /**
+     * Buang tahap kosong SEBELUM validasi.
+     *
+     * Form buat-permohonan bisa mengirim baris tahap kosong — dulu dari kotak
+     * cadangan, kini dari baris dinamis yang ditambah lalu dibiarkan kosong.
+     * Tanpa penyaringan ini, `stage_names.*` bertanda `required` menolak baris
+     * kosong itu dan seluruh pengiriman gagal, padahal maksudnya "tak dipakai".
+     * Menyaring di sini membuat `min:1` tetap bermakna: bila SEMUA kosong, yang
+     * tersisa array kosong dan pesan "minimal satu tahap" yang muncul — bukan
+     * "field ke-N wajib diisi" yang membingungkan.
+     */
+    protected function prepareForValidation(): void
+    {
+        $stages = $this->input('stage_names');
+
+        if (is_array($stages)) {
+            $this->merge([
+                'stage_names' => array_values(array_filter(
+                    array_map(static fn ($v): mixed => is_string($v) ? trim($v) : $v, $stages),
+                    static fn ($v): bool => $v !== null && $v !== '',
+                )),
+            ]);
+        }
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function rules(): array

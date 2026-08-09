@@ -40,23 +40,105 @@
 
         <div>
             <span class="mb-1 block text-sm font-medium text-gray-700">Tahap proses</span>
-            <div class="space-y-2">
-                @for ($i = 0; $i < 6; $i++)
-                    <input name="stage_names[]" maxlength="120"
-                           value="{{ old('stage_names.'.$i, $i < 5 ? [
-                               'Permohonan diterima',
-                               'Verifikasi kelengkapan administrasi',
-                               'Verifikasi teknis',
-                               'Persetujuan Direktur',
-                               'Penerbitan izin',
-                           ][$i] : '') }}"
-                           placeholder="Tahap {{ $i + 1 }} (kosongkan bila tidak dipakai)"
-                           class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
-                @endfor
+
+            @php
+                $defaultStages = [
+                    'Permohonan diterima',
+                    'Verifikasi kelengkapan administrasi',
+                    'Verifikasi teknis',
+                    'Persetujuan Direktur',
+                    'Penerbitan izin',
+                ];
+                $stageValues = array_values(array_filter(
+                    array_map(fn ($v) => trim((string) $v), (array) old('stage_names', $defaultStages)),
+                    fn ($v) => $v !== '',
+                ));
+                $stageValues = $stageValues ?: [''];
+                $maxStages = (int) config('pld.limits.timeline_entries');
+            @endphp
+
+            <div id="stages" class="space-y-2" data-max="{{ $maxStages }}">
+                @foreach ($stageValues as $value)
+                    <div class="stage-row flex items-center gap-2">
+                        <span class="stage-num w-6 shrink-0 text-right text-xs text-gray-400"></span>
+                        <input name="stage_names[]" maxlength="120" value="{{ $value }}"
+                               placeholder="Nama tahap"
+                               class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                        <button type="button" class="stage-remove shrink-0 rounded-md px-3 py-2 text-sm text-gray-400 hover:bg-gray-100 hover:text-red-600" aria-label="Hapus tahap">&times;</button>
+                    </div>
+                @endforeach
             </div>
+
+            <div class="mt-2 flex items-center gap-3">
+                <button type="button" id="stage-add"
+                        class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    + Tambah tahap
+                </button>
+                <span id="stage-count" class="text-xs text-gray-400"></span>
+            </div>
+
             <p class="mt-1 text-xs text-gray-500">
-                Nama tahap ini dibaca member di portal PLD dan ikut ke isi notifikasi kenaikan tahap.
+                Nama tahap dibaca member di portal PLD dan ikut ke isi notifikasi kenaikan tahap.
+                Baris kosong diabaikan; maksimal <span class="font-mono">{{ $maxStages }}</span> tahap
+                (batas kontrak §7, <span class="font-mono">pld.limits.timeline_entries</span>).
             </p>
+
+            <script>
+                (function () {
+                    const list = document.getElementById('stages');
+                    if (!list) return;
+                    const addBtn = document.getElementById('stage-add');
+                    const countEl = document.getElementById('stage-count');
+                    const MAX = parseInt(list.dataset.max, 10) || 50;
+
+                    function newRow() {
+                        const row = document.createElement('div');
+                        row.className = 'stage-row flex items-center gap-2';
+                        row.innerHTML =
+                            '<span class="stage-num w-6 shrink-0 text-right text-xs text-gray-400"></span>' +
+                            '<input name="stage_names[]" maxlength="120" placeholder="Nama tahap" ' +
+                            'class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500">' +
+                            '<button type="button" class="stage-remove shrink-0 rounded-md px-3 py-2 text-sm text-gray-400 hover:bg-gray-100 hover:text-red-600" aria-label="Hapus tahap">×</button>';
+                        return row;
+                    }
+
+                    function refresh() {
+                        const rows = list.querySelectorAll('.stage-row');
+                        const only = rows.length <= 1;
+                        rows.forEach(function (row, i) {
+                            row.querySelector('.stage-num').textContent = (i + 1) + '.';
+                            const rm = row.querySelector('.stage-remove');
+                            rm.disabled = only;
+                            rm.classList.toggle('opacity-30', only);
+                            rm.classList.toggle('cursor-not-allowed', only);
+                        });
+                        const atMax = rows.length >= MAX;
+                        addBtn.disabled = atMax;
+                        addBtn.classList.toggle('opacity-40', atMax);
+                        addBtn.classList.toggle('cursor-not-allowed', atMax);
+                        countEl.textContent = rows.length + ' / ' + MAX + ' tahap'
+                            + (atMax ? ' (maksimum)' : '');
+                    }
+
+                    addBtn.addEventListener('click', function () {
+                        if (list.querySelectorAll('.stage-row').length >= MAX) return;
+                        const row = newRow();
+                        list.appendChild(row);
+                        row.querySelector('input').focus();
+                        refresh();
+                    });
+
+                    list.addEventListener('click', function (e) {
+                        const btn = e.target.closest('.stage-remove');
+                        if (!btn || btn.disabled) return;
+                        if (list.querySelectorAll('.stage-row').length <= 1) return;
+                        btn.closest('.stage-row').remove();
+                        refresh();
+                    });
+
+                    refresh();
+                })();
+            </script>
         </div>
 
         <fieldset class="space-y-3 rounded-lg border border-gray-200 p-4">
