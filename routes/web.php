@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\PublishController;
 use App\Http\Controllers\Auth\MemberLoginController;
 use App\Http\Controllers\Auth\OperatorLoginController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Hubnet\AuthorizeController;
 use App\Http\Controllers\PublicApplicationController;
 use App\Http\Controllers\SsoLandingController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,28 @@ Route::get('/sso', SsoLandingController::class)->name('sso.landing');
 // menebak nomor permohonan.
 Route::get('/permohonan/{externalRef}', PublicApplicationController::class)
     ->name('permohonan.show');
+
+/*
+|-------------------------------------------------------------------------------
+| Hubnet TIRUAN — kaki PERAMBAN dari alur SSO (IdP palsu)
+|-------------------------------------------------------------------------------
+|
+| Path-nya sengaja sama persis dengan Hubnet asli (/sso/oauth/authorize) supaya
+| pld-user/backoffice cukup mengganti HUBNET_DOMAIN tanpa perubahan kode. Kaki
+| MESIN (token & userinfo) hidup terpisah di routes/hubnet.php — tanpa sesi/CSRF.
+|
+| GET  menampilkan halaman login; POST memverifikasi akun dummy lalu meredirect
+| kembali ke redirect_uri PLD dengan authorization code. Keduanya PUBLIK — memang
+| itu peran halaman login SSO — dan dibatasi laju agar tak jadi alat tebak kredensial.
+|
+*/
+Route::prefix('sso/oauth')
+    ->name('hubnet.authorize.')
+    ->middleware('throttle:60,1')
+    ->group(function (): void {
+        Route::get('/authorize', [AuthorizeController::class, 'show'])->name('show');
+        Route::post('/authorize', [AuthorizeController::class, 'login'])->name('login');
+    });
 
 /*
 |-------------------------------------------------------------------------------

@@ -52,6 +52,10 @@ final class DatabaseSeeder extends Seeder
         $this->actionRequiredExample($john);
         $this->completedExample($john);
         $this->inProgressExample($siti);
+
+        // Identitas DUMMY untuk Hubnet TIRUAN (IdP palsu uji SSO). Terpisah dari
+        // member aplikasi ini — ia mewakili "basis data Pusdatin", bukan pengguna PEL.
+        $this->call(HubnetUserSeeder::class);
     }
 
     /**

@@ -4,6 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -14,6 +15,12 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Kaki MESIN Hubnet TIRUAN (token & userinfo). Grup `api` = tanpa sesi/CSRF,
+        // dan didaftarkan di sini supaya BEBAS prefiks /api — path-nya harus persis
+        // Hubnet asli (/sso/oauth/token, /sso/api/user).
+        then: function (): void {
+            Route::middleware('api')->group(base_path('routes/hubnet.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Aplikasi ini punya DUA populasi pengguna dengan halaman masuk berbeda:
