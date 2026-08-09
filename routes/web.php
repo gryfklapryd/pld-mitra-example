@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Admin\ApplicationController;
+use App\Http\Controllers\Admin\HubnetClientController;
+use App\Http\Controllers\Admin\HubnetUserController;
 use App\Http\Controllers\Admin\IntegrationLogController;
 use App\Http\Controllers\Admin\PublishController;
 use App\Http\Controllers\Auth\MemberLoginController;
@@ -114,4 +116,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth:web')->group(function (
 
     Route::get('/publish', [PublishController::class, 'create'])->name('publish.create');
     Route::post('/publish', [PublishController::class, 'store'])->name('publish.store');
+
+    // Pengelolaan Hubnet TIRUAN: identitas dummy + klien OAuth yang boleh SSO.
+    Route::resource('hubnet-users', HubnetUserController::class)->except('show');
+    Route::resource('hubnet-clients', HubnetClientController::class)->except('show');
+    Route::post('/hubnet-clients/{hubnet_client}/regenerate-secret', [HubnetClientController::class, 'regenerateSecret'])
+        ->name('hubnet-clients.regenerate');
 });

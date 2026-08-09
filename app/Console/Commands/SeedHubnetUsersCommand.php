@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Support\HubnetSeedAccounts;
+use Database\Seeders\HubnetClientSeeder;
 use Database\Seeders\HubnetUserSeeder;
 use Illuminate\Console\Command;
 
@@ -19,13 +20,14 @@ final class SeedHubnetUsersCommand extends Command
 {
     protected $signature = 'hubnet:seed';
 
-    protected $description = 'Menyemai akun DUMMY Hubnet TIRUAN (idempoten)';
+    protected $description = 'Menyemai akun DUMMY + klien default Hubnet TIRUAN (idempoten)';
 
-    public function handle(HubnetUserSeeder $seeder): int
+    public function handle(HubnetUserSeeder $seeder, HubnetClientSeeder $clientSeeder): int
     {
         $seeder->run();
+        $clientSeeder->run();
 
-        $this->components->info('Akun Hubnet TIRUAN tersemai.');
+        $this->components->info('Akun & klien default Hubnet TIRUAN tersemai.');
         $this->line('  Kata sandi semua akun: <fg=yellow>'.HubnetSeedAccounts::PASSWORD.'</>');
         $this->line('');
 

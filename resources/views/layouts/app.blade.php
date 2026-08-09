@@ -34,6 +34,14 @@
                    class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.publish.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
                     Jalur B
                 </a>
+                <a href="{{ route('admin.hubnet-users.index') }}"
+                   class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.hubnet-users.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Hubnet: User
+                </a>
+                <a href="{{ route('admin.hubnet-clients.index') }}"
+                   class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.hubnet-clients.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Hubnet: Klien
+                </a>
 
                 <span class="ml-2 border-l border-gray-200 pl-3 text-xs text-gray-500">
                     Operator: <span class="font-medium text-gray-700">{{ $operator->name }}</span>

@@ -90,6 +90,23 @@ php artisan hubnet:seed         # WAJIB — migrate tidak menyemai akun
 
 ---
 
+## Mengelola user & klien lewat panel operator
+
+Setelah masuk sebagai operator (`/operator/masuk`; buat akun dengan
+`php artisan pel:operator` bila belum ada), tersedia dua menu:
+
+- **Hubnet: User** (`/admin/hubnet-users`) — CRUD identitas dummy. Buat/ubah/hapus
+  akun uji tanpa bergantung pada seeder: atur tipe, NIP/NIK/unit, dan penanda
+  aktif (hilangkan centang "Aktif" untuk menguji penolakan B5).
+- **Hubnet: Klien** (`/admin/hubnet-clients`) — CRUD aplikasi yang boleh memakai
+  SSO ini. `client_id`/`client_secret` dibangkitkan otomatis saat klien dibuat
+  dan ditampilkan untuk disalin ke env aplikasi klien; ada aksi "bangkitkan ulang
+  secret" dan tombol nonaktif (menolak klien tanpa menghapusnya).
+
+Sumber klien kini **basis data** (bukan lagi hanya env). Klien dari env tetap
+berfungsi sebagai **cadangan** dan otomatis muncul di panel setelah
+`php artisan hubnet:seed` (baris "PLD (default dari env)").
+
 ## Akun contoh (di-seed)
 
 Kata sandi semua akun: **`hubnet123`**. Radio di halaman login menentukan `type`.

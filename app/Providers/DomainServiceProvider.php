@@ -6,11 +6,13 @@ namespace App\Providers;
 
 use App\Repositories\ApplicationRepository;
 use App\Repositories\Contracts\ApplicationRepositoryContract;
+use App\Repositories\Contracts\HubnetClientRepositoryContract;
 use App\Repositories\Contracts\HubnetOAuthRepositoryContract;
 use App\Repositories\Contracts\HubnetUserRepositoryContract;
 use App\Repositories\Contracts\IntegrationLogRepositoryContract;
 use App\Repositories\Contracts\MemberRepositoryContract;
 use App\Repositories\Contracts\SsoTokenRepositoryContract;
+use App\Repositories\HubnetClientRepository;
 use App\Repositories\HubnetOAuthRepository;
 use App\Repositories\HubnetUserRepository;
 use App\Repositories\IntegrationLogRepository;
@@ -44,6 +46,7 @@ final class DomainServiceProvider extends ServiceProvider
 
         HubnetUserRepositoryContract::class => HubnetUserRepository::class,
         HubnetOAuthRepositoryContract::class => HubnetOAuthRepository::class,
+        HubnetClientRepositoryContract::class => HubnetClientRepository::class,
 
         TrackingPayloadServiceContract::class => TrackingPayloadService::class,
         IntegrationLoggerContract::class => IntegrationLogger::class,
