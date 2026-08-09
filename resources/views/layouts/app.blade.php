@@ -34,6 +34,14 @@
                    class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.publish.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
                     Jalur B
                 </a>
+                <a href="{{ route('admin.members.index') }}"
+                   class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.members.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Member
+                </a>
+                <a href="{{ route('admin.operators.index') }}"
+                   class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.operators.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
+                    Operator
+                </a>
                 <a href="{{ route('admin.hubnet-users.index') }}"
                    class="rounded-md px-3 py-1.5 {{ request()->routeIs('admin.hubnet-users.*') ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-600 hover:bg-gray-100' }}">
                     Hubnet: User

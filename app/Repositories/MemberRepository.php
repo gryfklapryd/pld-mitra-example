@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Models\Member;
 use App\Repositories\Contracts\MemberRepositoryContract;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Query\Expression;
 use Illuminate\Support\Collection;
 
@@ -14,6 +15,28 @@ final class MemberRepository implements MemberRepositoryContract
     public function findByUserLogin(string $userLogin): ?Member
     {
         return Member::query()->byUserLogin($userLogin)->first();
+    }
+
+    public function paginate(int $perPage = 20): LengthAwarePaginator
+    {
+        return Member::query()->orderBy('name')->paginate($perPage);
+    }
+
+    public function create(array $data): Member
+    {
+        return Member::query()->create($data);
+    }
+
+    public function update(Member $member, array $data): Member
+    {
+        $member->update($data);
+
+        return $member;
+    }
+
+    public function delete(Member $member): void
+    {
+        $member->delete();
     }
 
     public function activeByUserLogins(array $userLogins): Collection

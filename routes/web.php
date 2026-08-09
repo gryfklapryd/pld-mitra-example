@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\ApplicationController;
 use App\Http\Controllers\Admin\HubnetClientController;
 use App\Http\Controllers\Admin\HubnetUserController;
 use App\Http\Controllers\Admin\IntegrationLogController;
+use App\Http\Controllers\Admin\MemberController;
+use App\Http\Controllers\Admin\OperatorController;
 use App\Http\Controllers\Admin\PublishController;
 use App\Http\Controllers\Auth\MemberLoginController;
 use App\Http\Controllers\Auth\OperatorLoginController;
@@ -116,6 +118,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth:web')->group(function (
 
     Route::get('/publish', [PublishController::class, 'create'])->name('publish.create');
     Route::post('/publish', [PublishController::class, 'store'])->name('publish.store');
+
+    // Pengelolaan member layanan & operator internal (pengganti pel:member / pel:operator).
+    Route::resource('members', MemberController::class)->except('show');
+    Route::resource('operators', OperatorController::class)->except('show');
 
     // Pengelolaan Hubnet TIRUAN: identitas dummy + klien OAuth yang boleh SSO.
     Route::resource('hubnet-users', HubnetUserController::class)->except('show');
