@@ -1,0 +1,16 @@
+.git
+.github
+node_modules
+vendor
+public/build
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+tests
+.phpunit.result.cache
+# .env TIDAK ikut masuk image: konfigurasinya di-mount dari host saat runtime,
+# jadi kredensial tak pernah terbenam di layer image.
+.env
+.env.*
+!.env.example
