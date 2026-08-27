@@ -23,6 +23,18 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // TLS diterminasi oleh nginx di host; container hanya menerima http polos
+        // dari loopback. Tanpa ini Laravel menyimpulkan skemanya http, lalu asset()
+        // dan route() mencetak URL http:// di dalam halaman yang dimuat lewat
+        // https — peramban memblokirnya sebagai mixed content, dan yang terlihat
+        // hanya halaman login tanpa gaya yang tombolnya tidak berfungsi.
+        //
+        // `at: '*'` aman DI SINI dan hanya di sini: port container terikat ke
+        // 127.0.0.1 pada host, jadi satu-satunya yang bisa mengirim
+        // X-Forwarded-Proto adalah nginx milik kita sendiri. Jangan salin pola ini
+        // ke aplikasi yang portnya terbuka ke jaringan.
+        $middleware->trustProxies(at: '*');
+
         // Aplikasi ini punya DUA populasi pengguna dengan halaman masuk berbeda:
         // member layanan (`member`) dan operator internal (`web`). Bawaan Laravel
         // mengarahkan seluruh tamu ke route bernama `login`, yang tidak ada di sini

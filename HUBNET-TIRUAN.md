@@ -2,7 +2,7 @@
 
 Aplikasi ini, di samping perannya sebagai mitra hilir PLD, kini juga menyediakan
 **tiruan Hubnet**: server SSO palsu yang meniru `hubnet.kemenhub.go.id` secara
-**fungsional**, supaya login SSO di `pld-dev.ortala-djpu.my.id` bisa diuji langsung
+**fungsional**, supaya login SSO di portal PLD (`pld.greyfikal.web.id`) bisa diuji langsung
 tanpa mendaftarkan URL ke Pusdatin.
 
 Ia mengimplementasikan tepat tiga permukaan yang disentuh pld-user
@@ -23,7 +23,7 @@ kredensial Kemenhub sungguhan.
 ## Alur ujung ke ujung
 
 ```
-1. Orang buka https://pld-dev.ortala-djpu.my.id/login → klik "SSO HUBNET"
+1. Orang buka https://pld.greyfikal.web.id/login → klik "SSO HUBNET"
 2. Peramban lompat ke  {HUBNET_DOMAIN}/sso/oauth/authorize?client_id=…&redirect_uri=…&response_type=code
 3. Halaman login TIRUAN → pilih salah satu akun contoh → Log In
 4. TIRUAN terbitkan `code`, redirect balik ke  {BO_DOMAIN}/hubnet/sso?code=…&state=…
@@ -33,18 +33,36 @@ kredensial Kemenhub sungguhan.
 8. pld-user provisioning → sesi PLD terbit → masuk.
 ```
 
-`{HUBNET_DOMAIN}` = `https://202-155-132-181.nip.io` (deployment aplikasi ini).
+`{HUBNET_DOMAIN}` = `https://sso.greyfikal.web.id` (deployment aplikasi ini).
+
+> **Pindah host, 2026-08-27.** Tiruan ini dulu hidup di
+> `https://202-155-132-181.nip.io`. FortiGate di jaringan VPS PLD memblokir
+> **setiap permintaan bernama** ke IP `202.155.132.181` — diuji dengan
+> `curl --resolve` yang memotong DNS sepenuhnya, dan `nip.io`,
+> `sso.greyfikal.web.id`, maupun nama karangan sama-sama dibalas **403**. Hanya
+> permintaan tanpa hostname yang lolos, dan itu tak terpakai karena sertifikatnya
+> hanya untuk nama lama. Menambah A record cuma memberi halaman blokir itu nama baru.
+>
+> Yang gugur bukan kaki peramban — peramban pemakai ada di luar jaringan VPS dan
+> selalu bisa menjangkau IdP. Yang gugur adalah **langkah 6 & 7** di alur bawah:
+> pld-user memanggil `/sso/oauth/token` dan `/sso/api/user` dari DALAM VPS. Login
+> tampak mulus sampai layar terakhir lalu gagal saat tukar-kode, dengan galat yang
+> menunjuk ke IdP alih-alih ke jaringan.
+>
+> Karena itu tiruan ini sekarang **serumah dengan PLD** di VPS `103.141.234.16`:
+> panggilan mesin-ke-mesin jadi hairpin lewat nginx host dan tak pernah menyentuh
+> FortiGate.
 
 ---
 
 ## Nilai yang harus disetel (turnkey)
 
-### 1. Di aplikasi ini (`.env` pada VPS — `/var/www/myapp/shared/.env`)
+### 1. Di aplikasi ini (`.env` — di VPS PLD: `/opt/pld-hubnet/env`)
 
 ```dotenv
 HUBNET_FAKE_CLIENT_ID=0bc24bbf-4912-4621-aa00-361795f3e18e
 HUBNET_FAKE_CLIENT_SECRET=1d4274360762607e17e89a6cd453cdd2c6f66000be4bddbc
-HUBNET_FAKE_REDIRECT_URIS=https://pld-dev.ortala-djpu.my.id/hubnet/sso
+HUBNET_FAKE_REDIRECT_URIS=https://pld.greyfikal.web.id/hubnet/sso
 HUBNET_FAKE_CODE_TTL=120
 HUBNET_FAKE_TOKEN_TTL=300
 ```
@@ -56,20 +74,23 @@ HUBNET_FAKE_TOKEN_TTL=300
 ### 2. Di **pld-user** (secret cluster / `secrets-templates/pld-user.env`)
 
 ```dotenv
-HUBNET_DOMAIN=https://202-155-132-181.nip.io
+HUBNET_DOMAIN=https://sso.greyfikal.web.id
 HUBNET_CLIENT_ID=0bc24bbf-4912-4621-aa00-361795f3e18e
 HUBNET_CLIENT_SECRET=1d4274360762607e17e89a6cd453cdd2c6f66000be4bddbc
-BO_DOMAIN=https://pld-dev.ortala-djpu.my.id      # sudah terisi
-TLS_INSECURE_SKIP_VERIFY=                          # BIARKAN KOSONG — sertifikat nip.io valid
+BO_DOMAIN=https://pld.greyfikal.web.id           # sudah terisi
+TLS_INSECURE_SKIP_VERIFY=                          # BIARKAN KOSONG — sertifikatnya valid
 ```
 
-> Sertifikat `202-155-132-181.nip.io` sah (Let's Encrypt), jadi **jangan**
-> menyalakan `TLS_INSECURE_SKIP_VERIFY`.
+> `sso.greyfikal.web.id` ada di sertifikat Let's Encrypt `pld-vps` bersama
+> `pld.`/`minio.`/`argocd.`, jadi **jangan** menyalakan `TLS_INSECURE_SKIP_VERIFY`.
+> Pod menjangkaunya lewat override CoreDNS (`kube-system/coredns-custom`) yang
+> memetakan nama itu ke IP host — nama host tetap utuh, jadi verifikasi TLS penuh
+> tetap lulus.
 
 ### 3. Di **backoffice** (`NEXT_PUBLIC_APP_HUBNET_URL`)
 
 ```
-https://202-155-132-181.nip.io/sso/oauth/authorize?client_id=0bc24bbf-4912-4621-aa00-361795f3e18e&redirect_uri=https%3A%2F%2Fpld-dev.ortala-djpu.my.id%2Fhubnet%2Fsso&response_type=code&scope=&login_api=null
+https://sso.greyfikal.web.id/sso/oauth/authorize?client_id=0bc24bbf-4912-4621-aa00-361795f3e18e&redirect_uri=https%3A%2F%2Fpld.greyfikal.web.id%2Fhubnet%2Fsso&response_type=code&scope=&login_api=null
 ```
 
 > Ini nilai build-time Next.js — perlu **rebuild** backoffice setelah diganti.
@@ -78,13 +99,29 @@ https://202-155-132-181.nip.io/sso/oauth/authorize?client_id=0bc24bbf-4912-4621-
 
 ## Deploy tiruan ini
 
-Push ke `main` memicu deploy (lihat `.github/workflows/deploy.yml`). Sesudah deploy:
+**Deployment aktif ada di VPS PLD**, sebagai Docker Compose di `/opt/pld-hubnet`
+(bukan lewat `.github/workflows/deploy.yml`, yang masih menyasar host lama).
 
 ```bash
-# di VPS
-php artisan migrate --force     # sudah dijalankan pipeline; aman diulang
-php artisan hubnet:seed         # WAJIB — migrate tidak menyemai akun
+ssh aspd
+cd /opt/pld-src && docker build -t localhost/hubnet-tiruan:<tag> ./pld-mitra-example
+cd /opt/pld-hubnet   # sesuaikan tag di docker-compose.yml
+docker compose up -d
+docker compose exec hubnet php artisan migrate --force
+docker compose exec hubnet php artisan hubnet:seed   # WAJIB — migrate tidak menyemai akun
 ```
+
+Dua hal yang memakan waktu untuk ditemukan, jangan diulangi:
+
+- **`Dockerfile` memakai `php:8.4`, bukan 8.3** yang tertulis di `require`
+  composer.json. `composer.lock` sudah mengunci komponen Symfony 8 yang menuntut
+  `php >=8.4.1`; build di 8.3 gagal dengan 17 konflik platform sekaligus.
+- **`env` yang di-mount harus terbaca `www-data`** (`chown root:33`, `chmod 640`).
+  Dengan mode 600 milik root, `php artisan` lewat `docker exec` tetap jalan
+  (sebagai root) sementara SETIAP permintaan web gagal 500 dengan
+  `MissingAppKeyException` — gejala yang menyesatkan karena CLI-nya sehat.
+- **MariaDB, bukan SQLite.** Migrasi di sini menuliskan `collate 'utf8mb4_unicode_ci'`
+  eksplisit; SQLite menolaknya dengan "no such collation sequence".
 
 `hubnet:seed` idempoten (aman diulang) dan mencetak daftar akun + kata sandinya.
 
