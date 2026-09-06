@@ -110,7 +110,7 @@
 
 <footer class="mx-auto max-w-6xl px-4 pb-10 pt-4 text-xs leading-relaxed text-gray-400">
     Aplikasi contoh implementasi kontrak integrasi PLD v1.1 (tracking
-    <span class="font-mono">{{ config('pld.contract_version') }}</span>).
+    <span class="font-mono">{{ config('pld.contract_version') }}</span>) &amp; provisioning akun v1.0.1.
 </footer>
 
 </body>
