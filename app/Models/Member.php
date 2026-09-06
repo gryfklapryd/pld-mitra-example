@@ -20,6 +20,10 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string|null $email
  * @property string $password
  * @property bool $is_active
+ * @property string|null $pld_user_id
+ * @property \Illuminate\Support\Carbon|null $email_verified_at
+ * @property array<int, string>|null $roles
+ * @property \Illuminate\Support\Carbon|null $provisioned_at
  */
 class Member extends Authenticatable implements AuthenticatableContract
 {
@@ -27,11 +31,15 @@ class Member extends Authenticatable implements AuthenticatableContract
     use HasFactory;
 
     protected $fillable = [
+        'pld_user_id',
         'user_login',
         'name',
         'email',
+        'email_verified_at',
         'password',
         'is_active',
+        'roles',
+        'provisioned_at',
     ];
 
     protected $hidden = [
@@ -44,6 +52,9 @@ class Member extends Authenticatable implements AuthenticatableContract
         return [
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'roles' => 'array',
+            'email_verified_at' => 'datetime',
+            'provisioned_at' => 'datetime',
         ];
     }
 

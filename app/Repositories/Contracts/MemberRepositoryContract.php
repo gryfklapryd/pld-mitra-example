@@ -33,6 +33,25 @@ interface MemberRepositoryContract
     public function findByUserLogin(string $userLogin): ?Member;
 
     /**
+     * Cari member lewat identitas PLD-nya.
+     *
+     * Dipakai provisioning SEBELUM mencocokkan email/NIP (kontrak §10):
+     * `pld_user_id` tak pernah berubah walau member mengganti email di PLD,
+     * sementara pencocokan lewat email akan menganggapnya orang baru lalu
+     * membuatkan akun kedua untuk orang yang sama.
+     */
+    public function findByPldUserId(string $pldUserId): ?Member;
+
+    /**
+     * Cari member lewat email atau NIP — jalur cadangan provisioning untuk akun
+     * yang sudah ada di sini jauh sebelum PLD mengenalnya.
+     *
+     * NIP diperiksa terhadap `user_login` karena di aplikasi ini pegawai memang
+     * memakai NIP sebagai identitas masuknya.
+     */
+    public function findByIdentity(string $email, ?string $nip): ?Member;
+
+    /**
      * Ambil member aktif untuk sekumpulan `user_login` sekaligus.
      *
      * Bentuk bulk, bukan perulangan findByUserLogin: satu sinkronisasi membawa

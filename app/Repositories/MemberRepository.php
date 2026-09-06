@@ -17,6 +17,27 @@ final class MemberRepository implements MemberRepositoryContract
         return Member::query()->byUserLogin($userLogin)->first();
     }
 
+    public function findByPldUserId(string $pldUserId): ?Member
+    {
+        return Member::query()->where('pld_user_id', $pldUserId)->first();
+    }
+
+    public function findByIdentity(string $email, ?string $nip): ?Member
+    {
+        $email = mb_strtolower(trim($email));
+        $nip = $nip !== null ? trim($nip) : null;
+
+        return Member::query()
+            ->where(function ($query) use ($email, $nip): void {
+                $query->whereRaw('LOWER(email) = ?', [$email]);
+
+                if ($nip !== null && $nip !== '') {
+                    $query->orWhere('user_login', $nip);
+                }
+            })
+            ->first();
+    }
+
     public function paginate(int $perPage = 20): LengthAwarePaginator
     {
         return Member::query()->orderBy('name')->paginate($perPage);

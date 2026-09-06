@@ -64,6 +64,35 @@ return [
 
     /*
     |---------------------------------------------------------------------------
+    | Provisioning akun (API Provisioning URL)
+    |---------------------------------------------------------------------------
+    |
+    | `roles` adalah daftar kode peran yang DIKENAL aplikasi ini. Kontrak §8
+    | memintanya tegas: perlakukan `roles[]` dari PLD sebagai permintaan yang
+    | harus divalidasi, bukan perintah — kode di luar daftar ini dijawab
+    | ROLE_REJECTED. Tanpa daftar putih, satu salah ketik di katalog peran PLD
+    | akan tersimpan di sini sebagai peran yang tak berarti apa-apa, dan baru
+    | ketahuan saat seseorang bertanya kenapa ia tak bisa membuka apa pun.
+    |
+    | Nilainya harus sama persis dengan kode peran yang didaftarkan pengelola di
+    | katalog peran PLD.
+    |
+    | `default_role` dipakai bila PLD tidak menyertakan peran sama sekali — yang
+    | terjadi pada layanan tanpa tangga persetujuan yang belum menandai peran
+    | bawaannya. Akun tetap dibuat: menolak membuatnya hanya memindahkan
+    | kebuntuan ke member, yang tak bisa berbuat apa-apa soal konfigurasi.
+    |
+    */
+    'provisioning' => [
+        'roles' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('PLD_PROVISIONING_ROLES', 'PESERTA,PERSONEL,LEMBAGA,INSPEKTUR,EXAMINER')),
+        ))),
+        'default_role' => env('PLD_PROVISIONING_DEFAULT_ROLE', 'PESERTA'),
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
     | Batas-batas kontrak §7
     |---------------------------------------------------------------------------
     |
