@@ -56,11 +56,12 @@
             <h1 class="text-lg font-bold text-gray-800">PEL — Perizinan Elektronik</h1>
             <p class="mt-2 max-w-2xl text-sm leading-relaxed text-gray-600">
                 Aplikasi contoh yang bertindak sebagai <strong>mitra PLD</strong>. Ia mengimplementasikan
-                ketiga endpoint kontrak integrasi dan bisa dipakai untuk menguji tracking &amp; notifikasi
-                ujung ke ujung tanpa menunggu proses perizinan sungguhan.
+                keempat endpoint kontrak integrasi dan bisa dipakai untuk menguji SSO, tracking,
+                notifikasi, dan <strong>provisioning akun</strong> ujung ke ujung tanpa menunggu proses
+                perizinan sungguhan.
             </p>
 
-            <div class="mt-5 grid gap-3 sm:grid-cols-3">
+            <div class="mt-5 grid gap-3 sm:grid-cols-2">
                 <div class="rounded-lg border border-gray-200 p-4">
                     <p class="font-mono text-xs font-semibold text-blue-700">POST /api/pld/auth</p>
                     <p class="mt-1 text-xs text-gray-500">API Auth URL — tukar user_login jadi token SSO.</p>
@@ -73,6 +74,77 @@
                     <p class="font-mono text-xs font-semibold text-blue-700">POST /api/pld/tracking</p>
                     <p class="mt-1 text-xs text-gray-500">API Tracking URL — laporkan proses member (Jalur A).</p>
                 </div>
+                <div class="rounded-lg border border-blue-200 bg-blue-50/40 p-4">
+                    <p class="font-mono text-xs font-semibold text-blue-700">POST /api/pld/provisioning</p>
+                    <p class="mt-1 text-xs text-gray-500">API Provisioning URL — buatkan akun, nonaktifkan, atau ganti peran.</p>
+                </div>
+            </div>
+
+            {{-- Provisioning dijelaskan lebih panjang daripada tiga endpoint lain, dan itu
+                 disengaja: ia satu-satunya yang MENULIS ke aplikasi ini atas perintah PLD.
+                 Tiga lainnya hanya membaca atau menukar token. Orang yang mendaftarkan URL
+                 ini di portal PLD perlu tahu persis apa yang akan terjadi pada datanya. --}}
+            <div class="mt-5 rounded-xl border border-gray-200 bg-gray-50/60 p-5">
+                <h2 class="text-sm font-bold text-gray-800">Provisioning akun — cara kerjanya</h2>
+                <p class="mt-1.5 text-xs leading-relaxed text-gray-600">
+                    PLD <strong>tidak</strong> memanggil endpoint ini saat permohonan disetujui, melainkan
+                    saat member menekan &ldquo;Buka Aplikasi&rdquo; untuk <strong>pertama kali</strong>. Dengan
+                    begitu yang lahir di sini hanya akun yang benar-benar dibuka orangnya — bukan ribuan
+                    akun mati dari pemberian akses massal.
+                </p>
+
+                <p class="mt-3 text-xs font-semibold text-gray-700">Tiga aksi, satu alamat</p>
+                <ul class="mt-1 space-y-1 text-xs leading-relaxed text-gray-600">
+                    <li><span class="font-mono text-gray-800">createAccount</span> — buatkan akun beserta perannya.</li>
+                    <li><span class="font-mono text-gray-800">setStatus</span> — nonaktifkan/aktifkan saat akses dicabut atau dipulihkan.</li>
+                    <li><span class="font-mono text-gray-800">setRole</span> — <strong>ganti seluruh</strong> daftar peran; yang tak ikut dikirim dilepas.</li>
+                </ul>
+
+                <p class="mt-3 text-xs font-semibold text-gray-700">Empat jawaban <span class="font-mono">createAccount</span></p>
+                <ul class="mt-1 space-y-1 text-xs leading-relaxed text-gray-600">
+                    <li><span class="font-mono text-gray-800">CREATED</span> — akun baru dibuat, <span class="font-mono">userLogin</span> dikembalikan.</li>
+                    <li><span class="font-mono text-gray-800">EXISTS_LINKED</span> — akun sudah ada <em>dan</em> emailnya pernah kami verifikasi.</li>
+                    <li>
+                        <span class="font-mono text-gray-800">EXISTS_UNVERIFIED</span> — akun sudah ada tetapi
+                        kepemilikannya <strong>tak pernah dibuktikan</strong>. Kami menolak menautkannya, dan
+                        <span class="font-mono">userLogin</span> sengaja tidak dikirim: mengirimkannya berarti
+                        membocorkan identitas akun orang lain. Member diarahkan ke &ldquo;Tautkan Akun&rdquo;.
+                    </li>
+                    <li><span class="font-mono text-gray-800">ROLE_REJECTED</span> — ada kode peran yang tidak kami kenal.</li>
+                </ul>
+
+                <p class="mt-3 text-xs leading-relaxed text-gray-600">
+                    Jawaban selalu <span class="font-mono">HTTP 200</span> selama permintaannya sah — hasilnya
+                    dibedakan lewat field <span class="font-mono">status</span>, sama seperti
+                    <span class="font-mono">is_valid</span> pada User Validation. Kunci
+                    <span class="font-mono">api-key</span> yang salah dijawab
+                    <span class="font-mono">400</span>, sama dengan tiga endpoint lainnya.
+                </p>
+
+                <p class="mt-3 text-xs leading-relaxed text-gray-600">
+                    <span class="font-mono">requestId</span> adalah <strong>kunci idempotensi</strong>:
+                    percobaan ulang dengan nilai yang sama dijawab persis sama tanpa dikerjakan lagi.
+                    Tanpa itu, satu jawaban yang hilang di jaringan akan melahirkan akun kedua untuk
+                    orang yang sama.
+                </p>
+
+                <p class="mt-3 text-xs leading-relaxed text-gray-600">
+                    Peran yang dikirim PLD divalidasi terhadap daftar yang dikenal aplikasi ini:
+                    @foreach ((array) config('pld.provisioning.roles', []) as $role)<span class="font-mono text-gray-800">{{ $role }}</span>@if (! $loop->last), @endif @endforeach.
+                    Kode di luar daftar itu dijawab <span class="font-mono">ROLE_REJECTED</span> — peran
+                    diperlakukan sebagai permintaan yang diperiksa, bukan perintah yang diikuti.
+                </p>
+
+                <p class="mt-3 text-xs leading-relaxed text-gray-500">
+                    Akun yang kami buat <strong>tidak punya password yang bisa dipakai</strong>: masuknya
+                    lewat SSO PLD. Password tidak pernah mengalir lewat PLD, dan tidak pernah kami
+                    kembalikan di dalam jawaban.
+                </p>
+
+                <p class="mt-3 text-xs leading-relaxed text-gray-500">
+                    Daftarkan di portal PLD sebagai <span class="font-mono">API Provisioning URL</span>:
+                    <span class="font-mono text-gray-800">{{ url('/api/pld/provisioning') }}</span>
+                </p>
             </div>
 
             <p class="mt-5 text-xs leading-relaxed text-gray-500">
