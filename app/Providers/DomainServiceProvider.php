@@ -12,12 +12,14 @@ use App\Repositories\Contracts\HubnetUserRepositoryContract;
 use App\Repositories\Contracts\IntegrationLogRepositoryContract;
 use App\Repositories\Contracts\MemberRepositoryContract;
 use App\Repositories\Contracts\OperatorRepositoryContract;
+use App\Repositories\Contracts\ProvisioningRequestStoreContract;
 use App\Repositories\Contracts\SsoTokenRepositoryContract;
 use App\Repositories\HubnetClientRepository;
 use App\Repositories\HubnetOAuthRepository;
 use App\Repositories\HubnetUserRepository;
 use App\Repositories\IntegrationLogRepository;
 use App\Repositories\MemberRepository;
+use App\Repositories\ProvisioningRequestStore;
 use App\Repositories\OperatorRepository;
 use App\Repositories\SsoTokenRepository;
 use App\Services\Contracts\IntegrationLoggerContract;
@@ -42,6 +44,7 @@ final class DomainServiceProvider extends ServiceProvider
      */
     private const BINDINGS = [
         MemberRepositoryContract::class => MemberRepository::class,
+        ProvisioningRequestStoreContract::class => ProvisioningRequestStore::class,
         OperatorRepositoryContract::class => OperatorRepository::class,
         ApplicationRepositoryContract::class => ApplicationRepository::class,
         IntegrationLogRepositoryContract::class => IntegrationLogRepository::class,

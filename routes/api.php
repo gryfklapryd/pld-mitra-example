@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthTokenController;
+use App\Http\Controllers\Api\ProvisioningController;
 use App\Http\Controllers\Api\TrackingController;
 use App\Http\Controllers\Api\UserValidationController;
 use App\Http\Middleware\VerifyPldApiKey;
@@ -13,12 +14,13 @@ use Illuminate\Support\Facades\Route;
 | Endpoint kontrak PLD — ARAH MASUK (PLD memanggil aplikasi ini)
 |-------------------------------------------------------------------------------
 |
-| Ketiganya POST, ketiganya dijaga header `Api-Key` yang sama. Alamatnya bebas —
+| Keempatnya POST, keempatnya dijaga header `Api-Key` yang sama. Alamatnya bebas —
 | yang mengikat adalah nilai yang didaftarkan di form Aplikasi milik PLD:
 |
 |   API Auth URL            → POST {APP_URL}/api/pld/auth
 |   API User Validation URL → POST {APP_URL}/api/pld/user/validation
 |   API Tracking URL        → POST {APP_URL}/api/pld/tracking
+|   API Provisioning URL    → POST {APP_URL}/api/pld/provisioning
 |
 | Tidak ada CSRF di sini (rute api), dan tidak ada sesi. Pemanggilnya mesin.
 |
@@ -40,4 +42,14 @@ Route::middleware(['throttle:120,1', VerifyPldApiKey::class])
         Route::post('/auth', AuthTokenController::class)->name('pld.auth');
         Route::post('/user/validation', UserValidationController::class)->name('pld.user-validation');
         Route::post('/tracking', TrackingController::class)->name('pld.tracking');
+
+        /*
+         * Provisioning akun (kontrak provisioning v1.0). Satu alamat untuk tiga
+         * aksi — createAccount, setStatus, setRole — dibedakan `action` pada badan.
+         *
+         * Ikut batas laju yang sama, dan itu memang cukup: pembuatan akun terjadi
+         * SEKALI per member per layanan, dipicu saat ia pertama kali menekan
+         * "Buka Aplikasi" di portal PLD. Tak ada siklus terjadwal yang memanggilnya.
+         */
+        Route::post('/provisioning', ProvisioningController::class)->name('pld.provisioning');
     });
