@@ -55,9 +55,12 @@ final readonly class ProvisionMemberAccountAction
     /**
      * @param  array<string, mixed>  $subject
      * @param  array<int, string>  $roles  kode peran yang SUDAH divalidasi pemanggil
+     * @param  array<int, array{code: string, roles: array<int, string>}>|null  $scopes  null = kunci scopes tidak dikirim
      */
-    public function __invoke(array $subject, array $roles): ProvisionResult
+    public function __invoke(array $subject, array $roles, ?array $scopes = null): ProvisionResult
     {
+        $lingkup = $scopes === null ? [] : ['scopes' => $scopes];
+
         $pldUserId = (string) $subject['pldUserId'];
         $email = (string) $subject['email'];
         $nip = isset($subject['nip']) ? (string) $subject['nip'] : null;
@@ -74,7 +77,7 @@ final readonly class ProvisionMemberAccountAction
             $this->members->update($member, [
                 'roles' => $roles,
                 'is_active' => true,
-            ]);
+            ] + $lingkup);
 
             return ProvisionResult::linked($member->user_login);
         }
@@ -96,7 +99,7 @@ final readonly class ProvisionMemberAccountAction
                 'pld_user_id' => $pldUserId,
                 'roles' => $roles,
                 'is_active' => true,
-            ]);
+            ] + $lingkup);
 
             return ProvisionResult::linked($member->user_login);
         }
@@ -121,7 +124,7 @@ final readonly class ProvisionMemberAccountAction
             'is_active' => true,
             'roles' => $roles,
             'provisioned_at' => now(),
-        ]);
+        ] + $lingkup);
 
         return ProvisionResult::created($member->user_login);
     }
@@ -163,6 +166,50 @@ final readonly class ProvisionMemberAccountAction
         if ($out === [] && $default !== null && $default !== '') {
             $out[] = mb_strtoupper($default);
         }
+
+        return $out;
+    }
+
+    /**
+     * Kode lingkup pada `scopes` yang tidak dikenal aplikasi ini, dibandingkan persis. Kode asing
+     * dijawab SCOPE_REJECTED (bagian 4.1.7) supaya pengelola layanan menyamakan kode di PLD,
+     * bukan diam-diam disimpan sebagai keanggotaan yang tidak berarti apa-apa di sini.
+     *
+     * @param  array<int, array{code: string, roles: array<int, string>}>  $scopes
+     * @param  array<int, string>  $known
+     * @return array<int, string>
+     */
+    public static function unknownScopeCodes(array $scopes, array $known): array
+    {
+        $asing = [];
+        foreach ($scopes as $scope) {
+            $kode = trim((string) ($scope['code'] ?? ''));
+            if (! in_array($kode, $known, true) && ! in_array($kode, $asing, true)) {
+                $asing[] = $kode;
+            }
+        }
+
+        return $asing;
+    }
+
+    /**
+     * Bentuk simpan `scopes`: kode apa adanya, kode peran huruf besar, unik, dan terurut.
+     *
+     * @param  array<int, array{code: string, roles: array<int, string>}>  $scopes
+     * @return array<int, array{code: string, roles: array<int, string>}>
+     */
+    public static function normalizeScopes(array $scopes): array
+    {
+        $out = [];
+        foreach ($scopes as $scope) {
+            $peran = array_values(array_unique(array_map(
+                static fn ($r): string => mb_strtoupper(trim((string) $r)),
+                (array) ($scope['roles'] ?? []),
+            )));
+            sort($peran);
+            $out[] = ['code' => trim((string) $scope['code']), 'roles' => $peran];
+        }
+        usort($out, static fn (array $a, array $b): int => strcmp($a['code'], $b['code']));
 
         return $out;
     }

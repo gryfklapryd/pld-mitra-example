@@ -117,11 +117,28 @@ final class ProvisioningController extends Controller
             );
         }
 
-        if ($action === 'setRole') {
-            return $this->accountState->setRoles($pldUserId, $peran);
+        // null = kunci scopes tidak dikirim, jadi keanggotaan lingkup yang tersimpan tidak disentuh.
+        $lingkup = null;
+        if (array_key_exists('scopes', $validated)) {
+            /** @var array<int, array{code: string, roles: array<int, string>}> $dikirim */
+            $dikirim = (array) $validated['scopes'];
+            $dikenal = (array) config('pld.provisioning.scopes', []);
+            $asing = ProvisionMemberAccountAction::unknownScopeCodes($dikirim, $dikenal);
+
+            if ($asing !== []) {
+                return ProvisionResult::scopeRejected(
+                    'Kode lingkup tidak dikenal aplikasi ini: '.implode(', ', $asing)
+                        .'. Kode yang dikenal: '.implode(', ', $dikenal).'.',
+                );
+            }
+            $lingkup = ProvisionMemberAccountAction::normalizeScopes($dikirim);
         }
 
-        return ($this->provisionAccount)($subject, $peran);
+        if ($action === 'setRole') {
+            return $this->accountState->setRoles($pldUserId, $peran, $lingkup);
+        }
+
+        return ($this->provisionAccount)($subject, $peran, $lingkup);
     }
 
     /**

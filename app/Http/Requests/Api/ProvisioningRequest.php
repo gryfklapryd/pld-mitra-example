@@ -68,6 +68,15 @@ final class ProvisioningRequest extends FormRequest
             'roles' => ['present_if:action,setRole', 'array', 'max:20'],
             'roles.*' => ['string', 'max:64'],
 
+            // `sometimes`, bukan `present`: layanan tanpa lingkup tidak pernah menerima kunci ini,
+            // dan kunci yang tidak dikirim berarti keanggotaan lingkup tidak berubah, bukan
+            // dikosongkan (bagian 4.1.7). Daftar kosong yang memang dikirim melepas semuanya.
+            'scopes' => ['sometimes', 'array'],
+            'scopes.*' => ['array'],
+            'scopes.*.code' => ['required', 'string', 'max:64'],
+            'scopes.*.roles' => ['present', 'array'],
+            'scopes.*.roles.*' => ['string', 'max:64'],
+
             'status' => ['required_if:action,setStatus', 'string', 'in:ACTIVE,DISABLED'],
             'reason' => ['nullable', 'string', 'max:500'],
         ];
@@ -90,6 +99,9 @@ final class ProvisioningRequest extends FormRequest
             'subject.accountKind.in' => 'subject.accountKind harus INTERNAL, EXTERNAL, atau OSS.',
             'roles.present_if' => 'roles wajib disertakan untuk aksi setRole (boleh berupa daftar kosong).',
             'status.required_if' => 'status wajib disertakan untuk aksi setStatus.',
+            'scopes.array' => 'scopes harus berupa daftar.',
+            'scopes.*.code.required' => 'Setiap scopes wajib punya code.',
+            'scopes.*.roles.present' => 'Setiap scopes wajib punya roles (boleh daftar kosong).',
         ];
     }
 

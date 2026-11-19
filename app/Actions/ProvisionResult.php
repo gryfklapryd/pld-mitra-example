@@ -43,6 +43,11 @@ final readonly class ProvisionResult
         return new self('ROLE_REJECTED', null, $message);
     }
 
+    public static function scopeRejected(string $message): self
+    {
+        return new self('SCOPE_REJECTED', null, $message);
+    }
+
     public static function ok(?string $userLogin = null): self
     {
         return new self('OK', $userLogin);

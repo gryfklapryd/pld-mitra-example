@@ -54,9 +54,13 @@ final readonly class SetMemberAccountStateAction
      * tidak ikut dikirim harus dilepas. Daftar kosong karena itu sah dan berarti
      * "lepaskan semuanya" — bukan "tidak ada yang berubah".
      *
+     * `scopes` sama: lengkap dan mengganti seluruh keanggotaan lingkup. null berarti PLD tidak
+     * mengirim kuncinya, jadi keanggotaan yang tersimpan dibiarkan.
+     *
      * @param  array<int, string>  $roles  kode peran yang SUDAH divalidasi pemanggil
+     * @param  array<int, array{code: string, roles: array<int, string>}>|null  $scopes
      */
-    public function setRoles(string $pldUserId, array $roles): ProvisionResult
+    public function setRoles(string $pldUserId, array $roles, ?array $scopes = null): ProvisionResult
     {
         $member = $this->members->findByPldUserId($pldUserId);
 
@@ -64,7 +68,11 @@ final readonly class SetMemberAccountStateAction
             return ProvisionResult::notFound('Tidak ada akun untuk member ini.');
         }
 
-        $this->members->update($member, ['roles' => $roles]);
+        $data = ['roles' => $roles];
+        if ($scopes !== null) {
+            $data['scopes'] = $scopes;
+        }
+        $this->members->update($member, $data);
 
         return ProvisionResult::ok($member->user_login);
     }

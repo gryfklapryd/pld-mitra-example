@@ -89,6 +89,13 @@ return [
             explode(',', (string) env('PLD_PROVISIONING_ROLES', 'PESERTA,PERSONEL,LEMBAGA,INSPEKTUR,EXAMINER')),
         ))),
         'default_role' => env('PLD_PROVISIONING_DEFAULT_ROLE', 'PESERTA'),
+        // Kode lingkup yang dikenal aplikasi ini (bagian 4.1.7 dokumen provisioning), misalnya kode
+        // lembaga diklat. Dibandingkan persis, termasuk huruf besar dan kecil, karena PLD
+        // mengirimnya apa adanya seperti yang kita serahkan ke pengelola layanan.
+        'scopes' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('PLD_PROVISIONING_SCOPES', 'LEMDIK-A,LEMDIK-B')),
+        ))),
     ],
 
     /*

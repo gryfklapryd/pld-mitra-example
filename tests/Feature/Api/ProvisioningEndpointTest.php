@@ -305,4 +305,101 @@ final class ProvisioningEndpointTest extends TestCase
 
         $this->kirim($payload)->assertOk()->assertJson(['status' => 'CREATED']);
     }
+
+    /**
+     * Lingkup (bagian 4.1.7): kode apa adanya, peran per lingkup huruf besar dan terurut.
+     */
+    #[Test]
+    public function create_account_menyimpan_keanggotaan_lingkup(): void
+    {
+        $this->kirim($this->payload([
+            'roles' => ['PESERTA', 'LEMBAGA'],
+            'scopes' => [
+                ['code' => 'LEMDIK-B', 'roles' => ['lembaga']],
+                ['code' => 'LEMDIK-A', 'roles' => ['LEMBAGA', 'LEMBAGA']],
+            ],
+        ]))->assertOk()->assertJson(['status' => 'CREATED']);
+
+        $member = Member::query()->where('pld_user_id', self::PLD_USER)->firstOrFail();
+        $this->assertSame([
+            ['code' => 'LEMDIK-A', 'roles' => ['LEMBAGA']],
+            ['code' => 'LEMDIK-B', 'roles' => ['LEMBAGA']],
+        ], $member->scopes);
+    }
+
+    #[Test]
+    public function kode_lingkup_asing_dijawab_scope_rejected_tanpa_membuat_akun(): void
+    {
+        $this->kirim($this->payload([
+            'roles' => ['LEMBAGA'],
+            'scopes' => [['code' => 'lemdik-a', 'roles' => ['LEMBAGA']]],
+        ]))->assertOk()
+            ->assertJson(['status' => 'SCOPE_REJECTED'])
+            ->assertJsonMissingPath('userLogin');
+
+        $this->assertDatabaseMissing('members', ['pld_user_id' => self::PLD_USER]);
+    }
+
+    /**
+     * Kunci `scopes` yang tidak dikirim tidak sama dengan daftar kosong: yang pertama membiarkan
+     * keanggotaan, yang kedua melepas semuanya. Payload setRole disusun manual karena
+     * array_replace_recursive tidak bisa mengosongkan array.
+     */
+    #[Test]
+    public function set_role_mengganti_lingkup_dan_kunci_yang_tidak_dikirim_tidak_mengosongkan(): void
+    {
+        $this->kirim($this->payload([
+            'roles' => ['LEMBAGA'],
+            'scopes' => [['code' => 'LEMDIK-A', 'roles' => ['LEMBAGA']]],
+        ]))->assertOk();
+
+        $ganti = $this->payload();
+        $ganti['action'] = 'setRole';
+        $ganti['requestId'] = 'REQ-GANTI-LINGKUP';
+        $ganti['roles'] = ['LEMBAGA', 'INSPEKTUR'];
+        $ganti['scopes'] = [['code' => 'LEMDIK-B', 'roles' => ['LEMBAGA']]];
+        $this->kirim($ganti)->assertOk()->assertJson(['status' => 'OK']);
+
+        $member = Member::query()->where('pld_user_id', self::PLD_USER)->firstOrFail();
+        $this->assertSame([['code' => 'LEMDIK-B', 'roles' => ['LEMBAGA']]], $member->scopes);
+
+        $tanpaKunci = $this->payload();
+        $tanpaKunci['action'] = 'setRole';
+        $tanpaKunci['requestId'] = 'REQ-TANPA-SCOPES';
+        $tanpaKunci['roles'] = ['LEMBAGA'];
+        $this->kirim($tanpaKunci)->assertOk()->assertJson(['status' => 'OK']);
+        $this->assertSame([['code' => 'LEMDIK-B', 'roles' => ['LEMBAGA']]], $member->fresh()->scopes);
+
+        $kosong = $tanpaKunci;
+        $kosong['requestId'] = 'REQ-SCOPES-KOSONG';
+        $kosong['scopes'] = [];
+        $this->kirim($kosong)->assertOk()->assertJson(['status' => 'OK']);
+        $this->assertSame([], $member->fresh()->scopes);
+    }
+
+    #[Test]
+    public function set_role_dengan_kode_lingkup_asing_tidak_mengubah_apa_pun(): void
+    {
+        $this->kirim($this->payload([
+            'roles' => ['LEMBAGA'],
+            'scopes' => [['code' => 'LEMDIK-A', 'roles' => ['LEMBAGA']]],
+        ]))->assertOk();
+
+        $ganti = $this->payload();
+        $ganti['action'] = 'setRole';
+        $ganti['requestId'] = 'REQ-LINGKUP-ASING';
+        $ganti['roles'] = ['INSPEKTUR'];
+        $ganti['scopes'] = [['code' => 'LEMDIK-Z', 'roles' => ['LEMBAGA']]];
+        $this->kirim($ganti)->assertOk()->assertJson(['status' => 'SCOPE_REJECTED']);
+
+        $member = Member::query()->where('pld_user_id', self::PLD_USER)->firstOrFail();
+        $this->assertSame(['LEMBAGA'], $member->roles);
+        $this->assertSame([['code' => 'LEMDIK-A', 'roles' => ['LEMBAGA']]], $member->scopes);
+    }
+
+    #[Test]
+    public function scopes_tanpa_roles_dijawab_400(): void
+    {
+        $this->kirim($this->payload(['scopes' => [['code' => 'LEMDIK-A']]]))->assertBadRequest();
+    }
 }
