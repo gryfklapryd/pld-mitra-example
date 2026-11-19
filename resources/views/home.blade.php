@@ -111,6 +111,13 @@
                         membocorkan identitas akun orang lain. Member diarahkan ke &ldquo;Tautkan Akun&rdquo;.
                     </li>
                     <li><span class="font-mono text-gray-800">ROLE_REJECTED</span> — ada kode peran yang tidak kami kenal.</li>
+                    <li>
+                        <span class="font-mono text-gray-800">SCOPE_REJECTED</span>, untuk layanan berlingkup: ada kode
+                        lingkup pada <span class="font-mono">scopes</span> yang tidak kami kenal. Kode yang dikenal:
+                        @foreach ((array) config('pld.provisioning.scopes', []) as $scope)<span class="font-mono text-gray-800">{{ $scope }}</span>@if (! $loop->last), @endif @endforeach.
+                        <span class="font-mono">scopes</span> yang dikirim mengganti seluruh keanggotaan lingkup; kunci yang
+                        tidak dikirim membiarkannya.
+                    </li>
                 </ul>
 
                 <p class="mt-3 text-xs leading-relaxed text-gray-600">

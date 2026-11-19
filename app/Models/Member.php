@@ -23,6 +23,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
  * @property string|null $pld_user_id
  * @property \Illuminate\Support\Carbon|null $email_verified_at
  * @property array<int, string>|null $roles
+ * @property array<int, array{code: string, roles: array<int, string>}>|null $scopes
  * @property \Illuminate\Support\Carbon|null $provisioned_at
  */
 class Member extends Authenticatable implements AuthenticatableContract
@@ -39,6 +40,7 @@ class Member extends Authenticatable implements AuthenticatableContract
         'password',
         'is_active',
         'roles',
+        'scopes',
         'provisioned_at',
     ];
 
@@ -53,6 +55,7 @@ class Member extends Authenticatable implements AuthenticatableContract
             'password' => 'hashed',
             'is_active' => 'boolean',
             'roles' => 'array',
+            'scopes' => 'array',
             'email_verified_at' => 'datetime',
             'provisioned_at' => 'datetime',
         ];
